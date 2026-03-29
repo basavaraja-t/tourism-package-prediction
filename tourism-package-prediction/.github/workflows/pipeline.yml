@@ -1,0 +1,56 @@
+
+name: Tourism Project Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  register-dataset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: pip install huggingface_hub pandas
+      - name: Upload Dataset
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tourism_project/model_building/data_register.py
+
+  data-prep:
+    needs: register-dataset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: pip install pandas scikit-learn huggingface_hub
+      - name: Data Preparation
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tourism_project/model_building/data_preparation.py
+
+  model-training:
+    needs: data-prep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: pip install pandas scikit-learn mlflow==2.12.1 huggingface_hub joblib
+      - name: Model Training
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tourism_project/model_building/model_training.py
+
+  deploy:
+    needs: model-training
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: pip install huggingface_hub
+      - name: Deploy to HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tourism_project/deployment/deploy.py
